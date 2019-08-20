@@ -13,15 +13,11 @@ data class Channel(
     val description: String
 )
 
-//val messages: List<Message>
-//    get() = transaction {
-//        val messagesRaw = Messages.select { channelId.eq(id) }.toList()
-//        messagesRaw.map(::Message)
-//    }
-
-@Serializable
+// Use for displaying stuff in interface - remove from here?
 data class User(
     val id: Int,
+    val name: String,
+    val email: String,
     val publicKey: String
 )
 

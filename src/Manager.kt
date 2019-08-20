@@ -3,6 +3,7 @@ package io.github.potatocurry
 import io.github.potatocurry.Channels.name
 import io.ktor.http.ContentType
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
@@ -22,15 +23,27 @@ object Manager {
             }
         }
 
-    val messages
-        get() = transaction {
-            Messages.selectAll().orderBy(Messages.time to SortOrder.ASC).map {
-                Message(
-                    Channels.select { Channels.id eq it[Messages.channelId] }.single()[Channels.name],
-                    it[Messages.signedText]
-                )
+    fun getLastMessages(channel: Channel, limit: Int = 50): List<Message> { // switch orderby asc and limit operation order?
+        return transaction {
+            val messagesRaw = Messages.select { Messages.channelId.eq(channel.id) }.limit(limit).toList()
+            messagesRaw.map {
+                 Message(
+                     channel.name,
+                     it[Messages.signedText]
+                 )
             }
         }
+    }
+
+//    val messages
+//        get() = transaction {
+//            Messages.selectAll().orderBy(Messages.time to SortOrder.ASC).map {
+//                Message(
+//                    Channels.select { Channels.id eq it[Messages.channelId] }.single()[Channels.name],
+//                    it[Messages.signedText]
+//                )
+//            }
+//        }
 
     fun insertMessage(message: Message): InsertStatement<Number> {
         return transaction {

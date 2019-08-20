@@ -2,7 +2,7 @@ package io.github.potatocurry
 
 import io.github.potatocurry.Channels.name
 import io.github.potatocurry.Manager.channels
-import io.github.potatocurry.Manager.messages
+import io.github.potatocurry.Manager.getLastMessages
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
@@ -10,6 +10,7 @@ import io.ktor.features.CallLogging
 import io.ktor.http.cio.websocket.*
 import io.ktor.response.respondText
 import io.ktor.routing.get
+import io.ktor.routing.route
 import io.ktor.routing.routing
 import io.ktor.server.netty.EngineMain
 import io.ktor.websocket.WebSockets
@@ -18,6 +19,7 @@ import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
+import kotlinx.serialization.list
 import kotlinx.serialization.stringify
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -60,15 +62,20 @@ fun Application.module() {
             call.respondText("server info")
         }
 
-        get("channels") {
-            call.respondText(json.stringify(channels))
+        route("channels") {
+            get {
+                call.respondText(json.stringify(channels))
+            }
+
+            get("{channel}") { // TODO: Add size parameter
+                val channelName = call.parameters["channel"]
+                val channel = channels.single { it.name == channelName }
+                call.respondText(json.stringify(Message.serializer().list, getLastMessages(channel)))
+            }
         }
 
         webSocket("messages") {
             sessions += this
-
-            for (message in messages)
-                outgoing.send(Frame.Text(json.stringify(message)))
 
             for (frame in incoming) {
                 when (frame) {
