@@ -1,9 +1,5 @@
 package io.github.potatocurry
 
-import io.github.potatocurry.Channels.name
-import io.ktor.http.ContentType
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
@@ -48,7 +44,7 @@ object Manager {
     fun insertMessage(message: Message): InsertStatement<Number> {
         return transaction {
             Messages.insert {
-                it[channelId] = Channels.select { name eq message.channel }.single()[Channels.id]
+                it[channelId] = Channels.select { Channels.name eq message.channel }.single()[Channels.id]
 //                it[userId] = Users.select { publicKey eq message.publicKey }.single()[Users.id]
                 it[time] = DateTime.now()
                 it[signedText] = message.text
