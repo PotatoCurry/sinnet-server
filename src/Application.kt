@@ -81,15 +81,12 @@ fun Application.module() {
                 when (frame) {
                     is Frame.Text -> {
                         val text = frame.readText()
-                        if (text.equals("bye", true)) {
-                            close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
-                        }
                         val message = json.parse(Message.serializer(), text)
                         Manager.insertMessage(message)
                         broadcastMessage(json.stringify(message))
                     }
                     else -> {
-                        println("received ${frame.data}")
+                        println("Received ${frame.data}")
                     }
                 }
             }
