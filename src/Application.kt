@@ -32,7 +32,7 @@ fun main(args: Array<String>) = EngineMain.main(args)
 @UnstableDefault
 @ImplicitReflectionSerializer
 fun Application.module() {
-    Database.connect("jdbc:postgresql://localhost:5432/postgres", "org.postgresql.Driver", "postgres", "postgres")
+    Database.connect(System.getenv("JDBC_DATABASE_URL"), "org.postgresql.Driver")
     transaction {
         addLogger(StdOutSqlLogger)
 
