@@ -15,6 +15,7 @@ import io.ktor.routing.routing
 import io.ktor.server.netty.EngineMain
 import io.ktor.websocket.WebSockets
 import io.ktor.websocket.webSocket
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.json.Json
@@ -77,18 +78,22 @@ fun Application.module() {
         webSocket("messages") {
             sessions += this
 
-            for (frame in incoming) {
-                when (frame) {
-                    is Frame.Text -> {
-                        val text = frame.readText()
-                        val message = json.parse(Message.serializer(), text)
-                        Manager.insertMessage(message)
-                        broadcastMessage(json.stringify(message))
-                    }
-                    else -> {
-                        println("Received ${frame.data}")
+            try {
+                for (frame in incoming) {
+                    when (frame) {
+                        is Frame.Text -> {
+                            val text = frame.readText()
+                            val message = json.parse(Message.serializer(), text)
+                            Manager.insertMessage(message)
+                            broadcastMessage(json.stringify(message))
+                        }
+                        else -> {
+                            println("Received ${frame.data}")
+                        }
                     }
                 }
+            } catch (e: ClosedReceiveChannelException) {
+               sessions.remove(this)
             }
         }
     }
@@ -99,6 +104,8 @@ fun importChannels(): List<Pair<String, String>> {
 }
 
 suspend fun broadcastMessage(text: String) {
-    for (websocket in sessions) // launch coroutine to avoid blocking?
+    for (websocket in sessions) { // launch coroutine to avoid blocking?
         websocket.outgoing.send(Frame.Text(text))
+        println("broadcasted $text")
+    }
 }
