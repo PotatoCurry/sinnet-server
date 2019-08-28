@@ -68,10 +68,15 @@ fun Application.module() {
                 call.respondText(json.stringify(channels))
             }
 
-            get("{channel}") { // TODO: Add size parameter
+            get("{channel}") {
                 val channelName = call.parameters["channel"]
                 val channel = channels.single { it.name == channelName }
-                call.respondText(json.stringify(Message.serializer().list, getLastMessages(channel)))
+                val limit = call.request.queryParameters["limit"]?.toInt()
+                val lastMessages = if (limit == null)
+                    getLastMessages(channel)
+                else
+                    getLastMessages(channel, limit)
+                call.respondText(json.stringify(Message.serializer().list, lastMessages))
             }
         }
 
