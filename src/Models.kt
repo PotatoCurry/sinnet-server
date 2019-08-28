@@ -1,11 +1,5 @@
 package io.github.potatocurry
 
-import com.beust.klaxon.TypeAdapter
-import com.beust.klaxon.TypeFor
-import java.awt.Rectangle
-import java.awt.Shape
-import kotlin.reflect.KClass
-
 data class Channel(
     val id: Int,
     val name: String,
