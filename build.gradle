@@ -5,13 +5,11 @@ buildscript {
 
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
     }
 }
 
 apply plugin: 'kotlin'
 apply plugin: 'application'
-apply plugin: 'kotlinx-serialization'
 
 group 'io.github.potatocurry'
 mainClassName = "io.ktor.server.netty.EngineMain"
@@ -35,7 +33,7 @@ dependencies {
     compile "ch.qos.logback:logback-classic:$logback_version"
     compile "io.ktor:ktor-server-core:$ktor_version"
     compile "io.ktor:ktor-websockets:$ktor_version"
-    compile "org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.11.1"
+    compile "com.beust:klaxon:5.0.12"
     compile "org.jetbrains.exposed:exposed:0.16.3"
     compile "org.postgresql:postgresql:42.2.6"
     testCompile "io.ktor:ktor-server-tests:$ktor_version"

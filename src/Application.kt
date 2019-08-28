@@ -1,5 +1,7 @@
 package io.github.potatocurry
 
+import com.beust.klaxon.FieldRenamer
+import com.beust.klaxon.Klaxon
 import io.github.potatocurry.Channels.name
 import io.github.potatocurry.Manager.channels
 import io.github.potatocurry.Manager.getLastMessages
@@ -16,12 +18,6 @@ import io.ktor.server.netty.EngineMain
 import io.ktor.websocket.WebSockets
 import io.ktor.websocket.webSocket
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.serialization.ImplicitReflectionSerializer
-import kotlinx.serialization.UnstableDefault
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonConfiguration
-import kotlinx.serialization.list
-import kotlinx.serialization.stringify
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.Duration
@@ -30,8 +26,6 @@ val sessions = mutableListOf<WebSocketSession>()
 
 fun main(args: Array<String>) = EngineMain.main(args)
 
-@UnstableDefault
-@ImplicitReflectionSerializer
 fun Application.module() {
     Database.connect(System.getenv("JDBC_DATABASE_URL"), "org.postgresql.Driver")
     transaction {
@@ -56,7 +50,12 @@ fun Application.module() {
         masking = false
     }
 
-    val json = Json(JsonConfiguration.Default)
+    val klaxon = Klaxon().fieldRenamer(
+        object: FieldRenamer {
+            override fun toJson(fieldName: String) = FieldRenamer.camelToUnderscores(fieldName)
+            override fun fromJson(fieldName: String) = FieldRenamer.underscoreToCamel(fieldName)
+        }
+    )
 
     routing {
         get("info") {
@@ -65,7 +64,7 @@ fun Application.module() {
 
         route("channels") {
             get {
-                call.respondText(json.stringify(channels))
+                call.respondText(klaxon.toJsonString(channels))
             }
 
             get("{channel}") {
@@ -76,7 +75,7 @@ fun Application.module() {
                     getLastMessages(channel)
                 else
                     getLastMessages(channel, limit)
-                call.respondText(json.stringify(Message.serializer().list, lastMessages))
+                call.respondText(klaxon.toJsonString(lastMessages))
             }
         }
 
@@ -88,9 +87,11 @@ fun Application.module() {
                     when (frame) {
                         is Frame.Text -> {
                             val text = frame.readText()
-                            val message = json.parse(Message.serializer(), text)
+                            val message = klaxon.parse<Message>(text)!! // if null log error
                             Manager.insertMessage(message)
-                            broadcastMessage(json.stringify(message))
+                            val messageJson = klaxon.toJsonString(message)
+                            println(messageJson)
+                            broadcastMessage(messageJson)
                         }
                         else -> {
                             println("Received ${frame.data}")
@@ -98,7 +99,8 @@ fun Application.module() {
                     }
                 }
             } catch (e: ClosedReceiveChannelException) {
-               sessions.remove(this)
+                sessions.remove(this)
+                println("disconnect with error")
             }
         }
     }
