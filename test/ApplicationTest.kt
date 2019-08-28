@@ -18,7 +18,7 @@ import kotlin.test.assertNotNull
 @UnstableDefault
 @ImplicitReflectionSerializer
 class ApplicationTest {
-    val klaxon = Klaxon().fieldRenamer(
+    private val klaxon = Klaxon().fieldRenamer(
         object: FieldRenamer {
             override fun toJson(fieldName: String) = FieldRenamer.camelToUnderscores(fieldName)
             override fun fromJson(fieldName: String) = FieldRenamer.underscoreToCamel(fieldName)
@@ -38,7 +38,7 @@ class ApplicationTest {
                     handleRequest(HttpMethod.Get, "/channels/${channel.name}").apply {
                         assertEquals(HttpStatusCode.OK, response.status())
                         val messagesJson = assertNotNull(response.content)
-                        val messages = klaxon.parse<List<Message>>(messagesJson)
+                        val messages = klaxon.parseArray<Message>(messagesJson)
                         assertNotNull(messages)
                     }
                 }
