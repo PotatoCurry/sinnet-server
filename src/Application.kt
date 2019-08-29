@@ -17,7 +17,9 @@ import io.ktor.routing.routing
 import io.ktor.server.netty.EngineMain
 import io.ktor.websocket.WebSockets
 import io.ktor.websocket.webSocket
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
+import kotlinx.coroutines.launch
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.Duration
@@ -83,24 +85,25 @@ fun Application.module() {
             sessions += this
 
             try {
-                for (frame in incoming) {
-                    when (frame) {
-                        is Frame.Text -> {
-                            val text = frame.readText()
-                            val message = klaxon.parse<Message>(text)!! // if null log error
-                            Manager.insertMessage(message)
-                            val messageJson = klaxon.toJsonString(message)
-                            println(messageJson)
-                            broadcastMessage(messageJson)
-                        }
-                        else -> {
-                            println("Received ${frame.data}")
-                        }
+                for (frame in incoming) when (frame) {
+                    is Frame.Text -> {
+                        val text = frame.readText()
+                        val message = klaxon.parse<Message>(text)!! // if null log error
+                        Manager.insertMessage(message)
+                        val messageJson = klaxon.toJsonString(message)
+                        println(messageJson)
+                        broadcastMessage(messageJson)
+                    }
+                    else -> {
+                        println("Received unusual frame ${frame.data}") // warn about unusual activity
                     }
                 }
             } catch (e: ClosedReceiveChannelException) {
                 sessions.remove(this)
-                println("disconnect with error")
+                println("disconnected with error")
+            } finally {
+                sessions.remove(this)
+                println("disconnected normally")
             }
         }
     }
