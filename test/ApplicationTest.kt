@@ -31,9 +31,9 @@ class ApplicationTest {
             handleRequest(HttpMethod.Get, "/channels").apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 val channelsJson = assertNotNull(response.content)
-                println(channelsJson)
                 val channels = klaxon.parseArray<Channel>(channelsJson)
                 assertNotNull(channels)
+
                 channels.forEach { channel ->
                     handleRequest(HttpMethod.Get, "/channels/${channel.name}").apply {
                         assertEquals(HttpStatusCode.OK, response.status())

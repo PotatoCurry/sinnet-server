@@ -31,16 +31,6 @@ object Manager {
         }
     }
 
-//    val messages
-//        get() = transaction {
-//            Messages.selectAll().orderBy(Messages.time to SortOrder.ASC).map {
-//                Message(
-//                    Channels.select { Channels.id eq it[Messages.channelId] }.single()[Channels.name],
-//                    it[Messages.signedText]
-//                )
-//            }
-//        }
-
     fun insertMessage(message: Message): InsertStatement<Number> {
         return transaction {
             Messages.insert {

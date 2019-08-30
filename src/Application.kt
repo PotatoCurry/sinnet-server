@@ -22,10 +22,11 @@ import io.ktor.websocket.webSocket
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.logging.Logger
 
-val logger: Logger = Logger.getLogger("io.github.potatocurry")
+val logger: Logger = LoggerFactory.getLogger(EngineMain.javaClass)
 val sessions = mutableListOf<WebSocketSession>()
 
 fun main(args: Array<String>) = EngineMain.main(args)
@@ -93,19 +94,17 @@ fun Application.module() {
                         val message = klaxon.parse<Message>(text)!! // if null log error
                         Manager.insertMessage(message)
                         val messageJson = klaxon.toJsonString(message)
-                        println(messageJson)
                         broadcastMessage(messageJson)
                     }
                     else -> {
-                        println("Received unusual frame ${frame.data}") // warn about unusual activity
+                        logger.debug("Received unexpected {} frame", frame.frameType.name)
                     }
                 }
             } catch (e: ClosedReceiveChannelException) {
-                sessions.remove(this)
-                println("disconnected with error")
+                logger.debug("Channel closed with error", e)
             } finally {
                 sessions.remove(this)
-                println("disconnected normally")
+                logger.debug("Session disconnected")
             }
         }
     }
@@ -116,8 +115,9 @@ fun importChannels(): List<Pair<String, String>> {
 }
 
 suspend fun broadcastMessage(text: String) {
-    for (websocket in sessions) { // launch coroutine to avoid blocking?
-        websocket.outgoing.send(Frame.Text(text))
-        println("broadcasted $text")
+    sessions.forEach { outgoing ->
+        // launch coroutine to avoid blocking?
+        outgoing.send(Frame.Text(text))
     }
+    logger.trace("Sent \"{}\" to {} sessions", text, sessions.size)
 }
