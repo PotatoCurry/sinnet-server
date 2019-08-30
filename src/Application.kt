@@ -9,7 +9,9 @@ import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.CallLogging
-import io.ktor.http.cio.websocket.*
+import io.ktor.http.cio.websocket.Frame
+import io.ktor.http.cio.websocket.WebSocketSession
+import io.ktor.http.cio.websocket.readText
 import io.ktor.response.respondText
 import io.ktor.routing.get
 import io.ktor.routing.route
@@ -17,13 +19,13 @@ import io.ktor.routing.routing
 import io.ktor.server.netty.EngineMain
 import io.ktor.websocket.WebSockets
 import io.ktor.websocket.webSocket
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.launch
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.Duration
+import java.util.logging.Logger
 
+val logger: Logger = Logger.getLogger("io.github.potatocurry")
 val sessions = mutableListOf<WebSocketSession>()
 
 fun main(args: Array<String>) = EngineMain.main(args)
@@ -31,7 +33,7 @@ fun main(args: Array<String>) = EngineMain.main(args)
 fun Application.module() {
     Database.connect(System.getenv("JDBC_DATABASE_URL"), "org.postgresql.Driver")
     transaction {
-        addLogger(StdOutSqlLogger)
+        addLogger(Slf4jSqlDebugLogger)
 
         SchemaUtils.createMissingTablesAndColumns(Channels, Users, Messages)
         importChannels().forEach { channelInfo ->
