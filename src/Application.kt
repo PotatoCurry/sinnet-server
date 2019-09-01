@@ -91,10 +91,17 @@ fun Application.module() {
                 for (frame in incoming) when (frame) {
                     is Frame.Text -> {
                         val text = frame.readText()
-                        val message = klaxon.parse<Message>(text)!! // if null log error
-                        Manager.insertMessage(message)
-                        val messageJson = klaxon.toJsonString(message)
-                        broadcastMessage(messageJson)
+
+                        when (val transmission = klaxon.parse<Transmission>(text)) {
+                            is UserJoin -> {
+                                println("New user connected")
+                            }
+                            is Message -> {
+                                Manager.insertMessage(transmission)
+                                val messageJson = klaxon.toJsonString(transmission)
+                                broadcastMessage(messageJson)
+                            }
+                        }
                     }
                     else -> {
                         logger.debug("Received unexpected {} frame", frame.frameType.name)
