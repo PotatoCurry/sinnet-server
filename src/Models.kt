@@ -16,14 +16,19 @@ sealed class Transmission(val type: String)
 class TransmissionAdapter: TypeAdapter<Transmission> {
     override fun classFor(type: Any): KClass<out Transmission> = when (type as String) {
         "user_join" -> UserJoin::class
+        "user_leave" -> UserLeave::class
         "message" -> Message::class
-        else -> throw IllegalArgumentException("Unknown type $type")
+        else -> throw IllegalArgumentException("Received unknown type $type")
     }
 }
 
 data class UserJoin(
     val publicKey: String
 ) : Transmission("user_join")
+
+data class UserLeave(
+    val publicKey: String
+) : Transmission("user_leave")
 
 data class Message(
     val channel: String,

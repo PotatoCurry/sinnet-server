@@ -94,7 +94,7 @@ fun Application.module() {
 
                         when (val transmission = klaxon.parse<Transmission>(text)) {
                             is UserJoin -> {
-                                println("New user connected")
+                                logger.debug("New user connected")
                             }
                             is Message -> {
                                 Manager.insertMessage(transmission)
@@ -108,9 +108,12 @@ fun Application.module() {
                     }
                 }
             } catch (e: ClosedReceiveChannelException) {
-                logger.debug("Channel closed with error", e)
+                logger.debug("Channel closed unexpectedly", e)
             } finally {
                 sessions.remove(this)
+                val userLeave = UserLeave("")
+                val userLeaveJson = klaxon.toJsonString(userLeave)
+                broadcastMessage(userLeaveJson)
                 logger.debug("Session disconnected")
             }
         }
